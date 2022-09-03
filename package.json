@@ -1,0 +1,26 @@
+{
+  "name": "discord-bot-etsy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "AnimeFreakQT.js",
+  "scripts": {
+    "start": "node AnimeFreakQT.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KingDanx/Discord-Bot-Etsy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KingDanx/Discord-Bot-Etsy/issues"
+  },
+  "homepage": "https://github.com/KingDanx/Discord-Bot-Etsy#readme",
+  "dependencies": {
+    "axios": "^0.27.2",
+    "discord.js": "^14.3.0",
+    "dotenv": "^16.0.2"
+  }
+}
