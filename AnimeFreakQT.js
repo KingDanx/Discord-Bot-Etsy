@@ -25,7 +25,6 @@ const client = new Client({
 //Send a message
 const sendMessage = (message, channel = "232890995597901824") => {
   client.on("ready", (client) => {
-    getJoke();
     client.channels.cache.get(channel).send(message);
   });
 };
@@ -33,27 +32,16 @@ const sendMessage = (message, channel = "232890995597901824") => {
 const mockSpeak = (inputArray, inputString) => {
   inputArray = inputString.content.split("");
   for (let i = 0; i < inputArray.length - 1; i++) {
-    if (
-      (inputArray[i] % 2 == 0 &&
-        inputArray[i - 1] != inputArray[i - 1].toUpperCase()) ||
-      (i % 2 == 0 &&
-        i > 1 &&
-        inputArray[i - 1] != inputArray[i - 1].toUpperCase()) ||
-      (inputArray[i - 1] == " " &&
-        inputArray[i - 2] == inputArray[i - 2].toLowerCase() &&
-        inputArray[i] == inputArray[i].toLowerCase())
-    ) {
-      inputArray[i] = inputArray[i].toUpperCase();
-    } else {
-      inputArray[i] = inputArray[i].toLowerCase();
-    }
+    i % 2 == 0
+      ? (inputArray[i] = inputArray[i].toUpperCase())
+      : (inputArray[i] = inputArray[i].toLowerCase());
   }
   inputArray = inputArray.join("");
   return inputArray;
 };
 
 const log = (data) => {
-  console.log(data + "hafdha;lksdfajhdf");
+  console.log(data);
 };
 
 //call an API
@@ -61,7 +49,7 @@ const getJoke = async () => {
   await axios
     .get("https://api.chucknorris.io/jokes/random")
     .then((res) => {
-      console.log(res.data.value);
+      log(res.data.value);
       sendMessage(res.data.value);
       return res.data.value;
     })
@@ -81,15 +69,15 @@ const getJoke = async () => {
 
 // client.once("ready", () => {
 //   console.log(`Bot ${client.user.tag} ready!`);
-//   const joke = client.channels.cache.get("232890995597901824");
-//   //joke.send("l");
+//   getJoke();
 // });
+getJoke();
 
 client.on("messageCreate", (message) => {
   if (!message.author.bot) {
     if (
       message.author.id == "203652156467838976" ||
-      message.author.id == 182654957466419201
+      message.author.id == "182654957466419201"
     ) {
       message.reply(mockSpeak(message.content, message));
       //message.reply(danMessage);
