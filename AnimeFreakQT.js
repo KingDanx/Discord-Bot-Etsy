@@ -30,8 +30,8 @@ const sendMessage = (message, channel = "232890995597901824") => {
   });
 };
 
-const mockSpeak = (inputArray, inputMessage) => {
-  inputArray = inputMessage.content.split("");
+const mockSpeak = (inputArray, inputString) => {
+  inputArray = inputString.content.split("");
   for (let i = 0; i < inputArray.length - 1; i++) {
     if (
       (inputArray[i] % 2 == 0 &&
@@ -49,7 +49,7 @@ const mockSpeak = (inputArray, inputMessage) => {
     }
   }
   inputArray = inputArray.join("");
-  inputMessage.reply(inputArray);
+  return inputArray;
 };
 
 const log = (data) => {
@@ -91,7 +91,7 @@ client.on("messageCreate", (message) => {
       message.author.id == "203652156467838976" ||
       message.author.id == 182654957466419201
     ) {
-      mockSpeak(message.content, message);
+      message.reply(mockSpeak(message.content, message));
       //message.reply(danMessage);
     } else {
       message.reply(`Hmmmm, ${message.content}, very interesting`);
