@@ -13,6 +13,8 @@ dotenv.config();
 
 const token = process.env["TOKEN"];
 
+let joke;
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -23,11 +25,11 @@ const client = new Client({
 });
 
 //Send a message
-const sendMessage = (message, channel = "232890995597901824") => {
-  client.on("ready", (client) => {
-    client.channels.cache.get(channel).send(message);
-  });
-};
+// const sendMessage = (message, channel = "232890995597901824") => {
+//   client.on("ready", (client) => {
+//     client.channels.cache.get(channel).send(message);
+//   });
+// };
 
 const mockSpeak = (inputArray, inputString) => {
   inputArray = inputString.content.split("");
@@ -49,9 +51,8 @@ const getJoke = async () => {
   await axios
     .get("https://api.chucknorris.io/jokes/random")
     .then((res) => {
+      joke = res.data.value;
       log(res.data.value);
-      sendMessage(res.data.value);
-      return res.data.value;
     })
     .catch((error) => {
       if (error.response) {
@@ -64,14 +65,28 @@ const getJoke = async () => {
         console.log("Error", error.message);
       }
       console.log(error.config);
+    })
+    .then(() => {
+      return joke;
     });
 };
 
-// client.once("ready", () => {
-//   console.log(`Bot ${client.user.tag} ready!`);
-//   getJoke();
-// });
-getJoke();
+client.once("ready", () => {
+  let counter = 1;
+  console.log(`Bot ${client.user.tag} ready!`);
+  let testMsg = client.channels.cache.get("232890995597901824");
+
+  getJoke();
+
+  setInterval(() => {
+    getJoke();
+  }, 5000);
+
+  setInterval(() => {
+    testMsg.send(joke);
+    counter++;
+  }, 5000);
+});
 
 client.on("messageCreate", (message) => {
   if (!message.author.bot) {
@@ -80,7 +95,6 @@ client.on("messageCreate", (message) => {
       message.author.id == "182654957466419201"
     ) {
       message.reply(mockSpeak(message.content, message));
-      //message.reply(danMessage);
     } else {
       message.reply(`Hmmmm, ${message.content}, very interesting`);
     }
