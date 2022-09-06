@@ -51,7 +51,7 @@ const getJoke = async () => {
   await axios
     .get("https://api.chucknorris.io/jokes/random")
     .then((res) => {
-      joke = res.data.value;
+      joke = `@everyone ${res.data.value}`;
       log(res.data.value);
     })
     .catch((error) => {
