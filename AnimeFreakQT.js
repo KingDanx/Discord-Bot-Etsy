@@ -14,6 +14,7 @@ dotenv.config();
 const token = process.env["TOKEN"];
 
 let joke;
+let shopInfo;
 
 const client = new Client({
   intents: [
@@ -71,20 +72,53 @@ const getJoke = async () => {
     });
 };
 
+const getShopInfo = async () => {
+  await axios
+    .get("https://openapi.etsy.com/v3/application/shops/34937376", {
+      headers: {
+        "x-api-key": process.env["ETSY_API"],
+      },
+    })
+    .then((res) => {
+      log(res.data);
+      shopInfo = res.data;
+    })
+    .catch((error) => {
+      if (error.response) {
+        console.log(error.response.data);
+        console.log(error.response.status);
+        console.log(error.response.headers);
+      } else if (error.request) {
+        console.log(error.request);
+      } else {
+        console.log("Error", error.message);
+      }
+      console.log(error.config);
+    });
+};
+
 client.once("ready", () => {
-  let counter = 1;
   console.log(`Bot ${client.user.tag} ready!`);
-  let testMsg = client.channels.cache.get("232890995597901824");
+  let testMsg = client.channels.cache.get(process.env["ANIMEQT_GENERAL"]);
 
-  getJoke();
+  //getJoke();
+  getShopInfo();
+
+  // setInterval(() => {  get new info on interval
+  //   getJoke();
+  // }, 5000);
 
   setInterval(() => {
-    getJoke();
-  }, 5000);
-
-  setInterval(() => {
-    testMsg.send(joke);
-    counter++;
+    //testMsg.send(joke);
+    testMsg.send(
+      `@everyone \n-Shop Name: ${shopInfo.shop_name} 
+      \n-Shop ID:    ${shopInfo.shop_id} 
+      \n-Units Sold: ${shopInfo.transaction_sold_count} 
+      \n-Shop Info:  ${shopInfo.sale_message} 
+      \n-Reviews:    ${shopInfo.review_count} 
+      \n-Rating:     ${shopInfo.review_average} stars 
+      \n-Website:    ${shopInfo.url}`
+    );
   }, 5000);
 });
 
@@ -101,5 +135,4 @@ client.on("messageCreate", (message) => {
   }
 });
 
-//sendMessage("fasdf");
 client.login(token);
