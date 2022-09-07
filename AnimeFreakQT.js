@@ -15,6 +15,8 @@ const token = process.env["TOKEN"];
 
 let joke;
 let shopInfo;
+let oldShopInfo;
+let timer = 0;
 
 const client = new Client({
   intents: [
@@ -80,7 +82,7 @@ const getShopInfo = async () => {
       },
     })
     .then((res) => {
-      log(res.data);
+      //log(res.data);
       shopInfo = res.data;
     })
     .catch((error) => {
@@ -104,32 +106,54 @@ client.once("ready", () => {
   //getJoke();
   getShopInfo();
 
-  // setInterval(() => {  get new info on interval
-  //   getJoke();
-  // }, 5000);
+  //get new info on interval
+  setInterval(() => {
+    getShopInfo();
+    timer++;
+    console.log(`Checked for updated data ${timer} time(s)`);
+  }, 60 * 10000);
 
   setInterval(() => {
-    //testMsg.send(joke);
-    testMsg.send(
-      `@everyone \n-Shop Name: ${shopInfo.shop_name} 
-      \n-Shop ID:    ${shopInfo.shop_id} 
-      \n-Units Sold: ${shopInfo.transaction_sold_count} 
-      \n-Shop Info:  ${shopInfo.sale_message} 
-      \n-Reviews:    ${shopInfo.review_count} 
-      \n-Rating:     ${shopInfo.review_average} stars 
-      \n-Website:    ${shopInfo.url}`
-    );
-  }, 5000);
+    if (!oldShopInfo) {
+      oldShopInfo = shopInfo;
+    }
+
+    if (shopInfo.transaction_sold_count != oldShopInfo.transaction_sold_count) {
+      testMsg.send(
+        `@everyone NEW SALE!!
+        \n-Shop Name:  ${shopInfo.shop_name} 
+        \n-Units Sold: ${shopInfo.transaction_sold_count}`
+      );
+      oldShopInfo = shopInfo;
+    }
+  }, 60 * 10000);
 });
+
+setInterval(() => {
+  if (!oldShopInfo) {
+    oldShopInfo = shopInfo;
+  }
+
+  if (shopInfo.review_count != oldShopInfo.review_count) {
+    testMsg.send(
+      `@everyone NEW Review!!
+        \n-Shop Name:  ${shopInfo.shop_name} 
+        \n-Reviews:    ${shopInfo.review_count}
+        \n-Rating:     ${shopInfo.review_average} stars`
+    );
+    oldShopInfo = shopInfo;
+  }
+}, 60 * 10000);
 
 client.on("messageCreate", (message) => {
   if (!message.author.bot) {
     if (
-      message.author.id == "203652156467838976" ||
+      (message.guild == process.env.TAINTED_SOULS_GENERAL &&
+        message.author.id == "203652156467838976") ||
       message.author.id == "182654957466419201"
     ) {
       message.reply(mockSpeak(message.content, message));
-    } else {
+    } else if (message.guild == process.env.TAINTED_SOULS_GENERAL) {
       message.reply(`Hmmmm, ${message.content}, very interesting`);
     }
   }
