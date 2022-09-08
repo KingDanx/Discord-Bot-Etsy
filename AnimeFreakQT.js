@@ -162,7 +162,9 @@ const getOrderInfo = async () => {
 
 client.once("ready", () => {
   console.log(`Bot ${client.user.tag} ready!`);
-  let testMsg = client.channels.cache.get(process.env["ANIMEQT_ORDER_HISTORY"]);
+  const orderMsg = client.channels.cache.get(
+    process.env["ANIMEQT_ORDER_HISTORY"]
+  );
 
   getNewEtsyToken();
 
@@ -200,7 +202,7 @@ client.once("ready", () => {
       let newOrderCount = orderInfo.count - oldOrderInfo.count;
 
       for (let i = newOrderCount - 1; i > 0; i--) {
-        testMsg.send(
+        orderMsg.send(
           `@everyone NEW SALE!! - ${getFormatDate()} - $${
             orderInfo.results[i].grandtotal.amount / 100
           }
@@ -219,13 +221,14 @@ client.once("ready", () => {
   }, 45 * 1000);
 });
 
+const reviewMsg = client.channels.cache.get(process.env["ANIMEQT_GENERAL"]);
 setInterval(() => {
   if (!oldShopInfo) {
     oldShopInfo = shopInfo;
   }
 
-  if (shopInfo.review_count != oldShopInfo.review_count) {
-    testMsg.send(
+  if (shopInfo.review_count > oldShopInfo.review_count) {
+    reviewMsg.send(
       `@everyone NEW Review!!
         \n-Shop Name:  ${shopInfo.shop_name} 
         \n-Reviews:    ${shopInfo.review_count}
