@@ -6,16 +6,15 @@ const {
 } = require("discord.js");
 const axios = require("axios");
 const dotenv = require("dotenv");
-const { send } = require("process");
-const { time } = require("console");
 
 dotenv.config();
 
-const token = process.env["TOKEN"];
-
-let joke;
+let etsyToken;
+let refreshToken;
 let shopInfo;
 let oldShopInfo;
+let orderInfo;
+let oldOrderInfo;
 let timer = 0;
 
 const client = new Client({
@@ -27,12 +26,14 @@ const client = new Client({
   ],
 });
 
-//Send a message
-// const sendMessage = (message, channel = "232890995597901824") => {
-//   client.on("ready", (client) => {
-//     client.channels.cache.get(channel).send(message);
-//   });
-// };
+const getFormatDate = () => {
+  let date = new Date();
+  let formatDate = `${
+    date.getMonth() + 1
+  }/${date.getDate()}/${date.getFullYear()}`;
+
+  return formatDate;
+};
 
 const mockSpeak = (inputArray, inputString) => {
   inputArray = inputString.content.split("");
@@ -45,17 +46,79 @@ const mockSpeak = (inputArray, inputString) => {
   return inputArray;
 };
 
-const log = (data) => {
-  console.log(data);
+const getNewEtsyToken = async () => {
+  let params = new URLSearchParams();
+  try {
+    params.append("grant_type", "refresh_token");
+    params.append("client_id", process.env["ETSY_API"]);
+    params.append("refresh_token", process.env["REFRESH_TOKEN"]);
+    await axios
+      .post(`https://api.etsy.com/v3/public/oauth/token`, params, {
+        headers: {
+          "x-api-key": process.env["ETSY_API"],
+        },
+      })
+      .then((res) => {
+        refreshToken = res.data.refresh_token;
+        etsyToken = res.data.access_token;
+        console.log(res.data);
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response.data);
+          console.log(error.response.status);
+          console.log(error.response.headers);
+        } else if (error.request) {
+          console.log(error.request);
+        } else {
+          console.log("Error", error.message);
+        }
+        console.log(error.config);
+      });
+  } catch {
+    params = new URLSearchParams();
+    params.append("grant_type", "refresh_token");
+    params.append("client_id", process.env["ETSY_API"]);
+    params.append("refresh_token", refreshToken);
+    await axios
+      .post(`https://api.etsy.com/v3/public/oauth/token`, params, {
+        headers: {
+          "x-api-key": process.env["ETSY_API"],
+        },
+      })
+      .then((res) => {
+        refreshToken = res.data.refresh_token;
+        etsyToken = res.data.access_token;
+        console.log(res.data);
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response.data);
+          console.log(error.response.status);
+          console.log(error.response.headers);
+        } else if (error.request) {
+          console.log(error.request);
+        } else {
+          console.log("Error", error.message);
+        }
+        console.log(error.config);
+      });
+  }
 };
 
-//call an API
-const getJoke = async () => {
+const getShopInfo = async () => {
   await axios
-    .get("https://api.chucknorris.io/jokes/random")
+    .get(
+      `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}`,
+      {
+        headers: {
+          "x-api-key": process.env["ETSY_API"],
+          authorization: `${process.env["TOKEN_TYPE"]} ${process.env["ACCESS_TOKEN"]}`,
+        },
+      }
+    )
     .then((res) => {
-      joke = `@everyone ${res.data.value}`;
-      log(res.data.value);
+      shopInfo = res.data;
     })
     .catch((error) => {
       if (error.response) {
@@ -68,22 +131,23 @@ const getJoke = async () => {
         console.log("Error", error.message);
       }
       console.log(error.config);
-    })
-    .then(() => {
-      return joke;
     });
 };
 
-const getShopInfo = async () => {
+const getOrderInfo = async () => {
   await axios
-    .get("https://openapi.etsy.com/v3/application/shops/34937376", {
-      headers: {
-        "x-api-key": process.env["ETSY_API"],
-      },
-    })
+    .get(
+      `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}/receipts`,
+      {
+        headers: {
+          "x-api-key": process.env["ETSY_API"],
+          authorization: "Bearer " + process.env["ACCESS_TOKEN"],
+        },
+      }
+    )
     .then((res) => {
-      //log(res.data);
-      shopInfo = res.data;
+      orderInfo = res.data;
+      console.log(orderInfo);
     })
     .catch((error) => {
       if (error.response) {
@@ -103,30 +167,37 @@ client.once("ready", () => {
   console.log(`Bot ${client.user.tag} ready!`);
   let testMsg = client.channels.cache.get(process.env["ANIMEQT_GENERAL"]);
 
-  //getJoke();
-  getShopInfo();
+  getNewEtsyToken();
+  //getOrderInfo();
+  //getShopInfo();
 
   //get new info on interval
   setInterval(() => {
-    getShopInfo();
+    try {
+      getOrderInfo();
+      getShopInfo();
+    } catch {
+      getNewEtsyToken();
+    }
     timer++;
     console.log(`Checked for updated data ${timer} time(s)`);
-  }, 60 * 10000);
+  }, 60 * 1000);
 
   setInterval(() => {
-    if (!oldShopInfo) {
-      oldShopInfo = shopInfo;
+    if (!oldOrderInfo) {
+      oldOrderInfo = orderInfo;
     }
 
-    if (shopInfo.transaction_sold_count != oldShopInfo.transaction_sold_count) {
+    if (orderInfo.results.length > oldOrderInfo.results.length) {
       testMsg.send(
         `@everyone NEW SALE!!
-        \n-Shop Name:  ${shopInfo.shop_name} 
+
+        \n- 
         \n-Units Sold: ${shopInfo.transaction_sold_count}`
       );
       oldShopInfo = shopInfo;
     }
-  }, 60 * 10000);
+  }, 60 * 1000);
 });
 
 setInterval(() => {
@@ -143,14 +214,14 @@ setInterval(() => {
     );
     oldShopInfo = shopInfo;
   }
-}, 60 * 10000);
+}, 60 * 1000);
 
 client.on("messageCreate", (message) => {
   if (!message.author.bot) {
     if (
       (message.guild == process.env.TAINTED_SOULS_GENERAL &&
-        message.author.id == "203652156467838976") ||
-      message.author.id == "182654957466419201"
+        message.author.id == process.env["MY_ID"]) ||
+      message.author.id == process.env["BABOOM"]
     ) {
       message.reply(mockSpeak(message.content, message));
     } else if (message.guild == process.env.TAINTED_SOULS_GENERAL) {
@@ -159,4 +230,4 @@ client.on("messageCreate", (message) => {
   }
 });
 
-client.login(token);
+client.login(process.env["TOKEN"]);
