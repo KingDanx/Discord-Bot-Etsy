@@ -165,6 +165,7 @@ client.once("ready", () => {
   const orderMsg = client.channels.cache.get(
     process.env["ANIMEQT_ORDER_HISTORY"]
   );
+  const reviewMsg = client.channels.cache.get(process.env["ANIMEQT_GENERAL"]);
 
   getNewEtsyToken();
 
@@ -219,24 +220,23 @@ client.once("ready", () => {
       oldOrderInfo = orderInfo;
     }
   }, 45 * 1000);
-});
 
-const reviewMsg = client.channels.cache.get(process.env["ANIMEQT_GENERAL"]);
-setInterval(() => {
-  if (!oldShopInfo) {
-    oldShopInfo = shopInfo;
-  }
+  setInterval(() => {
+    if (!oldShopInfo) {
+      oldShopInfo = shopInfo;
+    }
 
-  if (shopInfo.review_count > oldShopInfo.review_count) {
-    reviewMsg.send(
-      `@everyone NEW Review!!
+    if (shopInfo.review_count > oldShopInfo.review_count) {
+      reviewMsg.send(
+        `@everyone NEW Review!!
         \n-Shop Name:  ${shopInfo.shop_name} 
         \n-Reviews:    ${shopInfo.review_count}
         \n-Rating:     ${shopInfo.review_average} stars`
-    );
-    oldShopInfo = shopInfo;
-  }
-}, 45 * 1000);
+      );
+      oldShopInfo = shopInfo;
+    }
+  }, 45 * 1000);
+});
 
 client.on("messageCreate", (message) => {
   if (!message.author.bot) {
