@@ -240,8 +240,11 @@ client.once("ready", () => {
       getNewEtsyToken();
     }
     timer++;
+    if (timer > 100) {
+      console.clear();
+    }
     console.log(`Checked for updated data ${timer} time(s)`);
-  }, 60 * 1000);
+  }, 45 * 1000);
 
   //Check for new orders on interval
   setInterval(() => {
@@ -267,9 +270,9 @@ client.once("ready", () => {
           ${orderInfo.results[i].formatted_address}`
         );
       }
-      oldShopInfo = orderInfo;
+      oldOrderInfo = orderInfo;
     }
-  }, 60 * 1000);
+  }, 45 * 1000);
 });
 
 setInterval(() => {
