@@ -186,9 +186,7 @@ client.once("ready", () => {
       getNewEtsyToken();
     }
     timer++;
-    if (timer > 100) {
-      console.clear();
-    }
+    console.clear();
     console.log(`Checked for updated data ${timer} time(s)`);
   }, 45 * 1000);
 
