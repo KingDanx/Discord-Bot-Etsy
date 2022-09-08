@@ -147,7 +147,6 @@ const getOrderInfo = async () => {
     )
     .then((res) => {
       orderInfo = res.data;
-      console.log(orderInfo);
     })
     .catch((error) => {
       if (error.response) {
@@ -183,19 +182,31 @@ client.once("ready", () => {
     console.log(`Checked for updated data ${timer} time(s)`);
   }, 60 * 1000);
 
+  //Check for new orders on interval
   setInterval(() => {
     if (!oldOrderInfo) {
       oldOrderInfo = orderInfo;
     }
 
-    if (orderInfo.results.length > oldOrderInfo.results.length) {
-      testMsg.send(
-        `@everyone NEW SALE!!
+    if (orderInfo.count > oldOrderInfo.count) {
+      let newOrderCount = orderInfo.count - oldOrderInfo.count;
 
-        \n- 
-        \n-Units Sold: ${shopInfo.transaction_sold_count}`
-      );
-      oldShopInfo = shopInfo;
+      for (let i = newOrderCount - 1; i > 0; i--) {
+        testMsg.send(
+          `@everyone NEW SALE!! - ${getFormatDate()} - $${
+            orderInfo.results[i].grandtotal.amount / 100
+          }
+  
+          \n- ${orderInfo.results[i].transactions.map((el) => {
+            `${el.quantity} - ${el.variations.map(
+              (li) => li.formatted_value
+            )}\n-`;
+          })}
+          \n- Customer: 
+          ${orderInfo.results[i].formatted_address}`
+        );
+      }
+      oldShopInfo = orderInfo;
     }
   }, 60 * 1000);
 });
