@@ -107,68 +107,129 @@ const getNewEtsyToken = async () => {
 };
 
 const getShopInfo = async () => {
-  await axios
-    .get(
-      `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}`,
-      {
-        headers: {
-          "x-api-key": process.env["ETSY_API"],
-          authorization: `${process.env["TOKEN_TYPE"]} ${process.env["ACCESS_TOKEN"]}`,
-        },
-      }
-    )
-    .then((res) => {
-      shopInfo = res.data;
-    })
-    .catch((error) => {
-      if (error.response) {
-        console.log(error.response.data);
-        console.log(error.response.status);
-        console.log(error.response.headers);
-      } else if (error.request) {
-        console.log(error.request);
-      } else {
-        console.log("Error", error.message);
-      }
-      console.log(error.config);
-    });
+  try {
+    await axios
+      .get(
+        `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}`,
+        {
+          headers: {
+            "x-api-key": process.env["ETSY_API"],
+            authorization: `${process.env["TOKEN_TYPE"]} ${process.env["ACCESS_TOKEN"]}`,
+          },
+        }
+      )
+      .then((res) => {
+        shopInfo = res.data;
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response.data);
+          console.log(error.response.status);
+          console.log(error.response.headers);
+        } else if (error.request) {
+          console.log(error.request);
+        } else {
+          console.log("Error", error.message);
+        }
+        console.log(error.config);
+      });
+  } catch {
+    await axios
+      .get(
+        `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}`,
+        {
+          headers: {
+            "x-api-key": process.env["ETSY_API"],
+            authorization: `${process.env["TOKEN_TYPE"]} ${etsyToken}`,
+          },
+        }
+      )
+      .then((res) => {
+        shopInfo = res.data;
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response.data);
+          console.log(error.response.status);
+          console.log(error.response.headers);
+        } else if (error.request) {
+          console.log(error.request);
+        } else {
+          console.log("Error", error.message);
+        }
+        console.log(error.config);
+      });
+  }
 };
 
 const getOrderInfo = async () => {
-  await axios
-    .get(
-      `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}/receipts`,
-      {
-        headers: {
-          "x-api-key": process.env["ETSY_API"],
-          authorization: "Bearer " + process.env["ACCESS_TOKEN"],
-        },
-      }
-    )
-    .then((res) => {
-      orderInfo = res.data;
-    })
-    .catch((error) => {
-      if (error.response) {
-        console.log(error.response.data);
-        console.log(error.response.status);
-        console.log(error.response.headers);
-      } else if (error.request) {
-        console.log(error.request);
-      } else {
-        console.log("Error", error.message);
-      }
-      console.log(error.config);
-    });
+  try {
+    await axios
+      .get(
+        `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}/receipts`,
+        {
+          headers: {
+            "x-api-key": process.env["ETSY_API"],
+            authorization: "Bearer " + process.env["ACCESS_TOKEN"],
+          },
+        }
+      )
+      .then((res) => {
+        orderInfo = res.data;
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response.data);
+          console.log(error.response.status);
+          console.log(error.response.headers);
+        } else if (error.request) {
+          console.log(error.request);
+        } else {
+          console.log("Error", error.message);
+        }
+        console.log(error.config);
+      });
+  } catch {
+    await axios
+      .get(
+        `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}/receipts`,
+        {
+          headers: {
+            "x-api-key": process.env["ETSY_API"],
+            authorization: "Bearer " + etsyToken,
+          },
+        }
+      )
+      .then((res) => {
+        orderInfo = res.data;
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response.data);
+          console.log(error.response.status);
+          console.log(error.response.headers);
+        } else if (error.request) {
+          console.log(error.request);
+        } else {
+          console.log("Error", error.message);
+        }
+        console.log(error.config);
+      });
+  }
 };
 
 client.once("ready", () => {
   console.log(`Bot ${client.user.tag} ready!`);
   let testMsg = client.channels.cache.get(process.env["ANIMEQT_ORDER_HISTORY"]);
 
-  getNewEtsyToken();
-  //getOrderInfo();
-  //getShopInfo();
+  getOrderInfo();
+  getShopInfo();
+
+  //get new token on interval
+  setInterval(() => {
+    getNewEtsyToken();
+    console.log(`Got new token`);
+  }, 45 * 60 * 1000);
 
   //get new info on interval
   setInterval(() => {
