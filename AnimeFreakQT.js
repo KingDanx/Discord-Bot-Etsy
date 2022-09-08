@@ -164,7 +164,7 @@ const getOrderInfo = async () => {
 
 client.once("ready", () => {
   console.log(`Bot ${client.user.tag} ready!`);
-  let testMsg = client.channels.cache.get(process.env["ANIMEQT_GENERAL"]);
+  let testMsg = client.channels.cache.get(process.env["ANIMEQT_ORDER_HISTORY"]);
 
   getNewEtsyToken();
   //getOrderInfo();
