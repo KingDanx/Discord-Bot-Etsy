@@ -165,7 +165,9 @@ client.once("ready", () => {
   const orderMsg = client.channels.cache.get(
     process.env["ANIMEQT_ORDER_HISTORY"]
   );
-  const reviewMsg = client.channels.cache.get(process.env["ANIMEQT_GENERAL"]);
+  const reviewMsg = client.channels.cache.get(
+    process.env["ANIMEQT_ETSY_REVIEWS"]
+  );
 
   getNewEtsyToken();
 
@@ -233,10 +235,15 @@ client.once("ready", () => {
         let newReviewCount = reviewInfo.count - oldReviewInfo.count;
 
         for (let i = newReviewCount - 1; i > 0; i--) {
-          orderMsg.send(
+          reviewMsg.send(
             `@everyone NEW REVIEW!! - ${getFormatDate()}
             \n- Rating: ${reviewInfo.results[i].rating}
-            \n- Review: ${reviewInfo.results[i].review == "" ? "*Review field left blank by customer*" : reviewInfo.results[i].review}`
+            \n- Review: ${
+              reviewInfo.results[i].review == ""
+                ? "*Review field left blank by customer*"
+                : reviewInfo.results[i].review
+            }`
+          );
         }
         oldReviewInfo = reviewInfo;
       }
