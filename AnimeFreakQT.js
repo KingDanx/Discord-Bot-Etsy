@@ -11,8 +11,8 @@ dotenv.config();
 
 let etsyToken;
 let refreshToken;
-let shopInfo;
-let oldShopInfo;
+let reviewInfo;
+let oldReviewInfo;
 let orderInfo;
 let oldOrderInfo;
 let timer = 0;
@@ -104,10 +104,10 @@ const getNewEtsyToken = async () => {
   }
 };
 
-const getShopInfo = async () => {
+const getShopReviews = async () => {
   await axios
     .get(
-      `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}`,
+      `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}/reviews`,
       {
         headers: {
           "x-api-key": process.env["ETSY_API"],
@@ -116,7 +116,7 @@ const getShopInfo = async () => {
       }
     )
     .then((res) => {
-      shopInfo = res.data;
+      reviewInfo = res.data;
     })
     .catch((error) => {
       if (error.response) {
@@ -171,7 +171,7 @@ client.once("ready", () => {
 
   setTimeout(() => {
     getOrderInfo();
-    getShopInfo();
+    getShopReviews();
   }, 10000);
 
   //get new token on interval
@@ -184,7 +184,7 @@ client.once("ready", () => {
   setInterval(() => {
     try {
       getOrderInfo();
-      getShopInfo();
+      getShopReviews();
     } catch {
       getNewEtsyToken();
     }
@@ -221,19 +221,25 @@ client.once("ready", () => {
     }
   }, 45 * 1000);
 
+  //Check for new reviews
   setInterval(() => {
-    if (!oldShopInfo) {
-      oldShopInfo = shopInfo;
+    if (!oldReviewInfo) {
+      oldReviewInfo = reviewInfo;
     }
+    if (!reviewInfo) {
+      return;
+    } else if (reviewInfo.count > oldReviewInfo.count) {
+      if (reviewInfo.count > oldReviewInfo.count) {
+        let newReviewCount = reviewInfo.count - oldReviewInfo.count;
 
-    if (shopInfo.review_count > oldShopInfo.review_count) {
-      reviewMsg.send(
-        `@everyone NEW Review!!
-        \n-Shop Name:  ${shopInfo.shop_name} 
-        \n-Reviews:    ${shopInfo.review_count}
-        \n-Rating:     ${shopInfo.review_average} stars`
-      );
-      oldShopInfo = shopInfo;
+        for (let i = newReviewCount - 1; i > 0; i--) {
+          orderMsg.send(
+            `@everyone NEW REVIEW!! - ${getFormatDate()}
+            \n- Rating: ${reviewInfo.results[i].rating}
+            \n- Review: ${reviewInfo.results[i].review == "" ? "*Review field left blank by customer*" : reviewInfo.results[i].review}`
+        }
+        oldReviewInfo = reviewInfo;
+      }
     }
   }, 45 * 1000);
 });
