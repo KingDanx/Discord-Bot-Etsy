@@ -204,7 +204,7 @@ client.once("ready", () => {
     if (orderInfo.count > oldOrderInfo.count) {
       let newOrderCount = orderInfo.count - oldOrderInfo.count;
 
-      for (let i = newOrderCount - 1; i > 0; i--) {
+      for (let i = newOrderCount - 1; i >= 0; i--) {
         orderMsg.send(
           `@everyone NEW SALE!! - ${getFormatDate()} - $${
             orderInfo.results[i].grandtotal.amount / 100
@@ -234,7 +234,7 @@ client.once("ready", () => {
       if (reviewInfo.count > oldReviewInfo.count) {
         let newReviewCount = reviewInfo.count - oldReviewInfo.count;
 
-        for (let i = newReviewCount - 1; i > 0; i--) {
+        for (let i = newReviewCount - 1; i >= 0; i--) {
           reviewMsg.send(
             `@everyone NEW REVIEW!! - ${getFormatDate()}
             \n- Rating: ${reviewInfo.results[i].rating}

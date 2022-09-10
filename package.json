@@ -4,7 +4,7 @@
   "description": "",
   "main": "AnimeFreakQT.js",
   "scripts": {
-    "start": "node AnimeFreakQT.js",
+    "start": "nodemon AnimeFreakQT.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
