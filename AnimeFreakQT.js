@@ -205,18 +205,19 @@ client.once("ready", () => {
       let newOrderCount = orderInfo.count - oldOrderInfo.count;
 
       for (let i = newOrderCount - 1; i >= 0; i--) {
+        let itemDescription = orderInfo.results[i].transactions.map((el) => {
+          `${el.quantity} - ${el.variations[0].formatted_value}\n-`;
+        });
+        itemDescription = itemDescription.join("");
         orderMsg.send(
           `@everyone NEW SALE!! - ${getFormatDate()} - $${
             orderInfo.results[i].grandtotal.amount / 100
           }
   
-          \n- ${orderInfo.results[i].transactions.map((el) => {
-            `${el.quantity} - ${el.variations.map(
-              (li) => li.formatted_value
-            )}\n-`;
-          })}
+          \n- ${itemDescription}
+
           \n- Customer: 
-          ${orderInfo.results[i].formatted_address}`
+          \n${orderInfo.results[i].formatted_address}`
         );
       }
       oldOrderInfo = orderInfo;
