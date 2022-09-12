@@ -200,6 +200,7 @@ client.once("ready", () => {
     if (!oldOrderInfo) {
       oldOrderInfo = orderInfo;
       // let itemDescription = [];
+      // let money = orderInfo.results[0].grandtotal.amount / 100;
       // orderInfo.results[0].transactions.map((el) => {
       //   itemDescription.push(
       //     `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
@@ -207,9 +208,9 @@ client.once("ready", () => {
       // });
       // itemDescription = itemDescription.join("");
       // orderMsg.send(
-      //   `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${
-      //     orderInfo.results[0].grandtotal.amount / 100
-      //   }**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
+      //   `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
+      //     2
+      //   )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
       //     orderInfo.results[0].formatted_address
       //   }`
       // );
@@ -219,6 +220,7 @@ client.once("ready", () => {
       let newOrderCount = orderInfo.count - oldOrderInfo.count;
 
       for (let i = newOrderCount - 1; i >= 0; i--) {
+        let money = orderInfo.results[i].grandtotal.amount / 100;
         let itemDescription = [];
         orderInfo.results[i].transactions.map((el) => {
           itemDescription.push(
@@ -227,11 +229,11 @@ client.once("ready", () => {
         });
         itemDescription = itemDescription.join("");
         orderMsg.send(
-          `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${
-            orderInfo.results[i].grandtotal.amount / 100
-          }**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
+          `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
+            2
+          )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
             orderInfo.results[i].formatted_address
-          }`
+          }\n`
         );
       }
       oldOrderInfo = orderInfo;
