@@ -199,25 +199,41 @@ client.once("ready", () => {
   setInterval(() => {
     if (!oldOrderInfo) {
       oldOrderInfo = orderInfo;
+      // let itemDescription = [];
+      // orderInfo.results[0].transactions.map((el) => {
+      //   itemDescription.push(
+      //     `${el.quantity} - ${el.variations[0].formatted_value}\n`
+      //   );
+      // });
+      // itemDescription = itemDescription.join("");
+      // orderMsg.send(
+      //   `@everyone NEW SALE!! - ${getFormatDate()} - **$${
+      //     orderInfo.results[0].grandtotal.amount / 100
+      //   }**
+      //   \n• ${itemDescription}\n• Customer:\n\n${
+      //     orderInfo.results[0].formatted_address
+      //   }`
+      // );
     }
 
     if (orderInfo.count > oldOrderInfo.count) {
       let newOrderCount = orderInfo.count - oldOrderInfo.count;
 
       for (let i = newOrderCount - 1; i >= 0; i--) {
-        let itemDescription = orderInfo.results[i].transactions.map((el) => {
-          `${el.quantity} - ${el.variations[0].formatted_value}\n-`;
+        let itemDescription = [];
+        orderInfo.results[i].transactions.map((el) => {
+          itemDescription.push(
+            `${el.quantity} - ${el.variations[0].formatted_value}\n`
+          );
         });
         itemDescription = itemDescription.join("");
         orderMsg.send(
-          `@everyone NEW SALE!! - ${getFormatDate()} - $${
+          `@everyone NEW SALE!! - ${getFormatDate()} - **$${
             orderInfo.results[i].grandtotal.amount / 100
-          }
-  
-          \n- ${itemDescription}
-
-          \n- Customer: 
-          \n${orderInfo.results[i].formatted_address}`
+          }**
+          \n• ${itemDescription}\n• Customer:\n\n${
+            orderInfo.results[i].formatted_address
+          }`
         );
       }
       oldOrderInfo = orderInfo;
