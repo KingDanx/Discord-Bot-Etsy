@@ -206,6 +206,11 @@ client.once("ready", () => {
     getShopListings();
   }, 10000);
 
+  //update shop listings every 30 minutes
+  setInterval(() => {
+    getShopListings();
+  }, 1000 * 60 * 30);
+
   //get new token on interval
   setInterval(() => {
     getNewEtsyToken();
