@@ -15,6 +15,7 @@ let reviewInfo;
 let oldReviewInfo;
 let orderInfo;
 let oldOrderInfo;
+let listingInfo;
 let timer = 0;
 
 const client = new Client({
@@ -160,6 +161,34 @@ const getOrderInfo = async () => {
     });
 };
 
+const getShopListings = async () => {
+  await axios
+    .get(
+      `https://openapi.etsy.com/v3/application/shops/${process.env.ANIMEFREAKQT_SHOP_ID}/listings/active`,
+      {
+        headers: {
+          "x-api-key": process.env["ETSY_API"],
+          authorization: "Bearer " + etsyToken,
+        },
+      }
+    )
+    .then((res) => {
+      listingInfo = res.data;
+    })
+    .catch((error) => {
+      if (error.response) {
+        console.log(error.response.data);
+        console.log(error.response.status);
+        console.log(error.response.headers);
+      } else if (error.request) {
+        console.log(error.request);
+      } else {
+        console.log("Error", error.message);
+      }
+      console.log(error.config);
+    });
+};
+
 client.once("ready", () => {
   console.log(`Bot ${client.user.tag} ready!`);
   const orderMsg = client.channels.cache.get(
@@ -174,6 +203,7 @@ client.once("ready", () => {
   setTimeout(() => {
     getOrderInfo();
     getShopReviews();
+    getShopListings();
   }, 10000);
 
   //get new token on interval
@@ -242,6 +272,35 @@ client.once("ready", () => {
 
   //Check for new reviews
   setInterval(() => {
+    // let averageRating;
+    // let reviewTotal = 0;
+    // reviewInfo.results.map((el) => (reviewTotal += el.rating));
+    // averageRating = reviewTotal / reviewInfo.results.length;
+    // let reviewFilter = listingInfo.results.filter(
+    //   (el) => el.listing_id == reviewInfo.results[0].listing_id
+    // );
+    // let buyerInfo = [];
+    // orderInfo.results.map((el) =>
+    //   el.buyer_user_id == reviewInfo.results[0].buyer_user_id
+    //     ? buyerInfo.push(formatted_address)
+    //     : null
+    // );
+    // reviewMsg.send(
+    //   `@everyone **NEW REVIEW!!** - ${getFormatDate()} - **Total Reviews:** ${
+    //     reviewInfo.results.length
+    //   } - **Average Review:** ${averageRating.toFixed(1)}
+    //   \n• **Item:** ${reviewFilter[0].title}\n\n• **Rating:** ${
+    //     reviewInfo.results[0].rating
+    //   } stars\n\n• **Review:** ${
+    //     reviewInfo.results[0].review == ""
+    //       ? "*Review field left blank by customer*"
+    //       : reviewInfo.results[0].review
+    //   }\n\n• **Customer:** \n${
+    //     buyerInfo.length == 0
+    //       ? "*No customer info*"
+    //       : buyerInfo[0].formatted_address
+    //   }`
+    // );
     if (!oldReviewInfo) {
       oldReviewInfo = reviewInfo;
     }
@@ -250,19 +309,40 @@ client.once("ready", () => {
     } else if (reviewInfo.count > oldReviewInfo.count) {
       if (reviewInfo.count > oldReviewInfo.count) {
         let newReviewCount = reviewInfo.count - oldReviewInfo.count;
+        let averageRating;
+        let reviewTotal = 0;
+        reviewInfo.results.map((el) => (reviewTotal += el.rating));
+        averageRating = reviewTotal / reviewInfo.results.length;
 
         for (let i = newReviewCount - 1; i >= 0; i--) {
+          let buyerInfo = [];
+          orderInfo.results.map((el) =>
+            el.buyer_user_id == reviewInfo.results[i].buyer_user_id
+              ? buyerInfo.push(formatted_address)
+              : null
+          );
+          let reviewFilter = listingInfo.results.filter(
+            (el) => el.listing_id == reviewInfo.results[i].listing_id
+          );
           reviewMsg.send(
-            `@everyone NEW REVIEW!! - ${getFormatDate()}
-            \n• Rating: ${reviewInfo.results[i].rating}
-            \n• Review: ${
+            `@everyone **NEW REVIEW!!** - ${getFormatDate()} - **Total Reviews:** ${
+              reviewInfo.results.length
+            } - **Average Review:** ${averageRating.toFixed(1)}
+            \n• **Item:** ${reviewFilter[0].title}\n\n• **Rating:** ${
+              reviewInfo.results[i].rating
+            } stars\n\n• **Review:** ${
               reviewInfo.results[i].review == ""
                 ? "*Review field left blank by customer*"
-                : reviewInfo.results[i].review
+                : reviewInfo.results[0].review
+            }\n\n• **Customer:** \n${
+              buyerInfo.length == 0
+                ? "*No customer info*"
+                : buyerInfo[0].formatted_address
             }`
           );
         }
         oldReviewInfo = reviewInfo;
+        reviewTotal = 0;
       }
     }
   }, 45 * 1000);
