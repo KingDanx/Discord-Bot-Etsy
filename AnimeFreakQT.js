@@ -108,7 +108,7 @@ const getNewEtsyToken = async () => {
 const getShopReviews = async () => {
   await axios
     .get(
-      `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}/reviews`,
+      `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}/reviews?limit=100`,
       {
         headers: {
           "x-api-key": process.env["ETSY_API"],
@@ -287,9 +287,10 @@ client.once("ready", () => {
     // let buyerInfo = [];
     // orderInfo.results.map((el) =>
     //   el.buyer_user_id == reviewInfo.results[0].buyer_user_id
-    //     ? buyerInfo.push(formatted_address)
+    //     ? buyerInfo.push(el.formatted_address)
     //     : null
     // );
+    // console.log(buyerInfo);
     // reviewMsg.send(
     //   `@everyone **NEW REVIEW!!** - ${getFormatDate()} - **Total Reviews:** ${
     //     reviewInfo.results.length
@@ -301,9 +302,7 @@ client.once("ready", () => {
     //       ? "*Review field left blank by customer*"
     //       : reviewInfo.results[0].review
     //   }\n\n• **Customer:** \n${
-    //     buyerInfo.length == 0
-    //       ? "*No customer info*"
-    //       : buyerInfo[0].formatted_address
+    //     buyerInfo.length == 0 ? "*No customer info*" : buyerInfo[0]
     //   }`
     // );
     if (!oldReviewInfo) {
@@ -323,7 +322,7 @@ client.once("ready", () => {
           let buyerInfo = [];
           orderInfo.results.map((el) =>
             el.buyer_user_id == reviewInfo.results[i].buyer_user_id
-              ? buyerInfo.push(formatted_address)
+              ? buyerInfo.push(el.formatted_address)
               : null
           );
           let reviewFilter = listingInfo.results.filter(
@@ -338,11 +337,9 @@ client.once("ready", () => {
             } stars\n\n• **Review:** ${
               reviewInfo.results[i].review == ""
                 ? "*Review field left blank by customer*"
-                : reviewInfo.results[0].review
+                : reviewInfo.results[i].review
             }\n\n• **Customer:** \n${
-              buyerInfo.length == 0
-                ? "*No customer info*"
-                : buyerInfo[0].formatted_address
+              buyerInfo.length == 0 ? "*No customer info*" : buyerInfo[i]
             }`
           );
         }
