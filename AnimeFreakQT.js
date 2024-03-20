@@ -52,35 +52,39 @@ const getNewEtsyToken = async () => {
   try {
     params.append("grant_type", "refresh_token");
     params.append("client_id", process.env["ETSY_API"]);
-    params.append("refresh_token", process.env["REFRESH_TOKEN"]);
-    await axios
-      .post(`https://api.etsy.com/v3/public/oauth/token`, params, {
+    params.append(
+      "refresh_token",
+      refreshToken ? refreshToken : process.env["REFRESH_TOKEN"]
+    );
+
+    const res = await axios.post(
+      `https://api.etsy.com/v3/public/oauth/token`,
+      params,
+      {
         headers: {
           "x-api-key": process.env["ETSY_API"],
         },
-      })
-      .then((res) => {
-        refreshToken = res.data.refresh_token;
-        etsyToken = res.data.access_token;
-      })
-      .catch((error) => {
-        if (error.response) {
-          console.log(error.response.data);
-          console.log(error.response.status);
-          console.log(error.response.headers);
-        } else if (error.request) {
-          console.log(error.request);
-        } else {
-          console.log("Error", error.message);
-        }
-        console.log(error.config);
-      });
-  } catch {
+      }
+    );
+
+    refreshToken = res.data.refresh_token;
+    etsyToken = res.data.access_token;
+  } catch (e) {
+    if (e.response) {
+      console.log(e.response.data);
+      console.log(e.response.status);
+      console.log(e.response.headers);
+    } else if (e.request) {
+      console.log(e.request);
+    } else {
+      console.log("Error", e.message);
+    }
+
     params = new URLSearchParams();
     params.append("grant_type", "refresh_token");
     params.append("client_id", process.env["ETSY_API"]);
     params.append("refresh_token", refreshToken);
-    await axios
+    axios
       .post(`https://api.etsy.com/v3/public/oauth/token`, params, {
         headers: {
           "x-api-key": process.env["ETSY_API"],
@@ -161,8 +165,8 @@ const getOrderInfo = async () => {
     });
 };
 
-const getShopListings = async () => {
-  await axios
+const getShopListings = () => {
+  axios
     .get(
       `https://openapi.etsy.com/v3/application/shops/${process.env.ANIMEFREAKQT_SHOP_ID}/listings/active`,
       {
@@ -258,11 +262,13 @@ client.once("ready", () => {
         let money = orderInfo.results[i].grandtotal.amount / 100;
         let itemDescription = [];
         orderInfo.results[i].transactions.map((el) => {
-          itemDescription.push(
-            `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
-          );
+          if (el?.variations && el?.quantity) {
+            itemDescription.push(
+              `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
+            );
+          }
         });
-        itemDescription = itemDescription.join("");
+        itemDescription = itemDescription.join("") || "Unknown Item";
         orderMsg.send(
           `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
             2
