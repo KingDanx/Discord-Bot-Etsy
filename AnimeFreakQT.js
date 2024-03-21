@@ -263,7 +263,7 @@ client.once("ready", () => {
           let money = orderInfo.results[i].grandtotal.amount / 100;
           let itemDescription = [];
           const shipByDate = new Date(
-            orderInfo.results[i].transactions.expected_ship_date
+            orderInfo.results[i].transactions[0].expected_ship_date
           );
           orderInfo.results[i].transactions.map((el) => {
             if (el?.variations && el?.quantity) {
