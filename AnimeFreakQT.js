@@ -27,13 +27,13 @@ const client = new Client({
   ],
 });
 
-const getFormatDate = () => {
-  let date = new Date();
-  let formatDate = `${
-    date.getMonth() + 1
-  }/${date.getDate()}/${date.getFullYear()}`;
-
-  return formatDate;
+const getFormatDate = (date = null) => {
+  if (date) {
+    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+  } else {
+    let date = new Date();
+    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+  }
 };
 
 const mockSpeak = (inputArray, inputString) => {
@@ -236,48 +236,61 @@ client.once("ready", () => {
 
   //Check for new orders on interval
   setInterval(() => {
-    if (!oldOrderInfo) {
-      oldOrderInfo = orderInfo;
-      // let itemDescription = [];
-      // let money = orderInfo.results[0].grandtotal.amount / 100;
-      // orderInfo.results[0].transactions.map((el) => {
-      //   itemDescription.push(
-      //     `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
-      //   );
-      // });
-      // itemDescription = itemDescription.join("");
-      // orderMsg.send(
-      //   `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
-      //     2
-      //   )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
-      //     orderInfo.results[0].formatted_address
-      //   }`
-      // );
-    }
-
-    if (orderInfo.count > oldOrderInfo.count) {
-      let newOrderCount = orderInfo.count - oldOrderInfo.count;
-
-      for (let i = newOrderCount - 1; i >= 0; i--) {
-        let money = orderInfo.results[i].grandtotal.amount / 100;
-        let itemDescription = [];
-        orderInfo.results[i].transactions.map((el) => {
-          if (el?.variations && el?.quantity) {
-            itemDescription.push(
-              `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
-            );
-          }
-        });
-        itemDescription = itemDescription.join("") || "Unknown Item";
-        orderMsg.send(
-          `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
-            2
-          )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
-            orderInfo.results[i].formatted_address
-          }\n`
-        );
+    try {
+      if (!oldOrderInfo) {
+        oldOrderInfo = orderInfo;
+        // let itemDescription = [];
+        // let money = orderInfo.results[0].grandtotal.amount / 100;
+        // orderInfo.results[0].transactions.map((el) => {
+        //   itemDescription.push(
+        //     `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
+        //   );
+        // });
+        // itemDescription = itemDescription.join("");
+        // orderMsg.send(
+        //   `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
+        //     2
+        //   )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
+        //     orderInfo.results[0].formatted_address
+        //   }`
+        // );
       }
-      oldOrderInfo = orderInfo;
+
+      if (orderInfo.count > oldOrderInfo.count) {
+        let newOrderCount = orderInfo.count - oldOrderInfo.count;
+
+        for (let i = newOrderCount - 1; i >= 0; i--) {
+          let money = orderInfo.results[i].grandtotal.amount / 100;
+          let itemDescription = [];
+          const shipByDate = new Date(
+            orderInfo.results[i].transactions.expected_ship_date
+          );
+          orderInfo.results[i].transactions.map((el) => {
+            if (el?.variations && el?.quantity) {
+              itemDescription.push(
+                `• ${el.quantity} - ${
+                  el.variations.length > 0
+                    ? el.variations[0].formatted_value
+                    : el.title
+                }\n`
+              );
+            }
+          });
+          itemDescription = itemDescription.join("");
+          orderMsg.send(
+            `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
+              2
+            )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
+              orderInfo.results[i].formatted_address
+            }\n\n**Ship Before:**\n${getFormatDate(shipByDate)}`
+          );
+        }
+        oldOrderInfo = orderInfo;
+      }
+    } catch (e) {
+      orderMsg.send(
+        `@everyone **The bot had a boo boo but there should be a new order**\n\n**Error:\n**${e.toString()}`
+      );
     }
   }, 45 * 1000);
 
