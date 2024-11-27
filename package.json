@@ -4,10 +4,9 @@
   "description": "",
   "main": "AnimeFreakQT.js",
   "scripts": {
-    "start": "node AnimeFreakQT.min.js",
+    "start": "node AnimeFreakQT.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/KingDanx/Discord-Bot-Etsy.git"
