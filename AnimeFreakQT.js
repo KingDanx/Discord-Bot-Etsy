@@ -6,11 +6,12 @@ const {
 } = require("discord.js");
 const axios = require("axios");
 const dotenv = require("dotenv");
+const { randomUUID } = require("crypto");
 
 dotenv.config();
 
-let etsyToken;
-let refreshToken;
+let etsyToken = process.env.ACCESS_TOKEN;
+let refreshToken = process.env.REFRESH_TOKEN;
 let reviewInfo;
 let oldReviewInfo;
 let orderInfo;
@@ -47,61 +48,120 @@ const mockSpeak = (inputArray, inputString) => {
   return inputArray;
 };
 
+async function generateCodeChallenge(codeVerifier) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(codeVerifier);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, ""); // Base64 URL encoding
+}
+
 const getNewEtsyToken = async () => {
   let params = new URLSearchParams();
+  const codeVerifier = randomUUID() + randomUUID();
+  const codeChallenge = await generateCodeChallenge(codeVerifier);
+  console.log(codeVerifier);
   try {
     params.append("grant_type", "refresh_token");
-    params.append("client_id", process.env["ETSY_API"]);
-    params.append("refresh_token", process.env["REFRESH_TOKEN"]);
-    await axios
-      .post(`https://api.etsy.com/v3/public/oauth/token`, params, {
+    params.append("client_id", process.env.ETSY_API);
+    params.append("response_type", "code");
+    params.append("redirect_uri", "https://kingdanx.github.io/etsy-info.html");
+    params.append("scope", "transactions_r listings_r");
+    params.append("state", "superstate");
+    params.append("code_challenge", codeChallenge);
+    params.append("code_challenge_method", "S256");
+    console.log(params);
+
+    const data = await axios.get(`https://etsy.com/oauth/connect`, { params });
+    // await axios
+    //   .post(`https://api.etsy.com/v3/public/oauth/token`, params, {
+    //     headers: {
+    //       "x-api-key": process.env["ETSY_API"],
+    //     },
+    //   })
+    //   .then((res) => {
+    //     refreshToken = res.data.refresh_token;
+    //     etsyToken = res.data.access_token;
+    //   })
+    //   .catch((error) => {
+    //     if (error.response) {
+    //       console.log(error.response.data);
+    //       console.log(error.response.status);
+    //       console.log(error.response.headers);
+    //     } else if (error.request) {
+    //       console.log(error.request);
+    //     } else {
+    //       console.log("Error", error.message);
+    //     }
+    //     console.log(error.config);
+    //   });
+  } catch (e) {
+    console.log(e);
+    // oauth2Token();
+  }
+};
+
+const refreshEtsyToken = async () => {
+  const form = new URLSearchParams({
+    grant_type: "refresh_token",
+    client_id: process.env.ETSY_API,
+    refresh_token: refreshToken,
+  }).toString();
+  try {
+    const { data } = await axios.post(
+      `https://api.etsy.com/v3/public/oauth/token`,
+      form,
+      {
         headers: {
+          "Content-Type": "application/x-www-form-urlencoded", // Specify content type
           "x-api-key": process.env["ETSY_API"],
         },
-      })
-      .then((res) => {
-        refreshToken = res.data.refresh_token;
-        etsyToken = res.data.access_token;
-      })
-      .catch((error) => {
-        if (error.response) {
-          console.log(error.response.data);
-          console.log(error.response.status);
-          console.log(error.response.headers);
-        } else if (error.request) {
-          console.log(error.request);
-        } else {
-          console.log("Error", error.message);
-        }
-        console.log(error.config);
-      });
-  } catch {
-    params = new URLSearchParams();
-    params.append("grant_type", "refresh_token");
-    params.append("client_id", process.env["ETSY_API"]);
-    params.append("refresh_token", refreshToken);
-    await axios
-      .post(`https://api.etsy.com/v3/public/oauth/token`, params, {
+      }
+    );
+
+    refreshToken = data.refresh_token;
+    etsyToken = data.access_token;
+  } catch (e) {
+    console.log(e);
+  }
+};
+
+const oauth2Token = async () => {
+  const form = new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: process.env.ETSY_API,
+    redirect_uri: "https://kingdanx.github.io/etsy-info.html",
+    code: process.env.CODE,
+    code_verifier: process.env.CODE_VERIFIER,
+  }).toString(); // Convert to application/x-www-form-urlencoded format
+
+  try {
+    const { data } = await axios.post(
+      `https://api.etsy.com/v3/public/oauth/token`,
+      form,
+      {
         headers: {
+          "Content-Type": "application/x-www-form-urlencoded", // Specify content type
           "x-api-key": process.env["ETSY_API"],
         },
-      })
-      .then((res) => {
-        refreshToken = res.data.refresh_token;
-        etsyToken = res.data.access_token;
-      })
-      .catch((error) => {
-        if (error.response) {
-          console.log(error.response.data);
-          console.log(error.response.status);
-          console.log(error.response.headers);
-        } else if (error.request) {
-          console.log(error.request);
-        } else {
-          console.log("Error", error.message);
-        }
-        console.log(error.config);
-      });
+      }
+    );
+
+    refreshToken = data.refresh_token;
+    etsyToken = data.access_token;
+  } catch (error) {
+    if (error.response) {
+      console.log(error.response.data);
+      console.log(error.response.status);
+      console.log(error.response.headers);
+    } else if (error.request) {
+      console.log(error.request);
+    } else {
+      console.log("Error", error.message);
+    }
+    console.log(error.config);
   }
 };
 
@@ -198,7 +258,8 @@ client.once("ready", () => {
     process.env["ANIMEQT_ETSY_REVIEWS"]
   );
 
-  getNewEtsyToken();
+  // getNewEtsyToken();
+  etsyToken = process.env.ACCESS_TOKEN;
 
   setTimeout(() => {
     getOrderInfo();
@@ -213,7 +274,7 @@ client.once("ready", () => {
 
   //get new token on interval
   setInterval(() => {
-    getNewEtsyToken();
+    refreshEtsyToken();
     console.log(`Got new token`);
   }, 45 * 60 * 1000);
 
@@ -223,7 +284,7 @@ client.once("ready", () => {
       getOrderInfo();
       getShopReviews();
     } catch {
-      getNewEtsyToken();
+      refreshEtsyToken();
     }
     timer++;
     console.clear();
