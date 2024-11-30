@@ -328,7 +328,7 @@ client.once("ready", () => {
           `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
             2
           )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
-            orderInfo.results[i].formatted_address
+            orderInfo.results[i].name
           }\n`
         );
       }
