@@ -19,6 +19,10 @@ let oldOrderInfo;
 let listingInfo;
 let timer = 0;
 
+process.on("uncaughtException", (e) => {
+  console.error(e);
+});
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -166,8 +170,8 @@ const oauth2Token = async () => {
 };
 
 const getShopReviews = async () => {
-  await axios
-    .get(
+  try {
+    const res = await axios.get(
       `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}/reviews?limit=100`,
       {
         headers: {
@@ -175,78 +179,52 @@ const getShopReviews = async () => {
           authorization: `${process.env["TOKEN_TYPE"]} ${etsyToken}`,
         },
       }
-    )
-    .then((res) => {
-      reviewInfo = res.data;
-    })
-    .catch((error) => {
-      if (error.response) {
-        console.log(error.response.data);
-        console.log(error.response.status);
-        console.log(error.response.headers);
-      } else if (error.request) {
-        console.log(error.request);
-      } else {
-        console.log("Error", error.message);
-      }
-      console.log(error.config);
-    });
+    );
+    reviewInfo = res.data;
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 const getOrderInfo = async () => {
-  await axios
-    .get(
+  try {
+    const res = await axios.get(
       `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}/receipts`,
       {
         headers: {
           "x-api-key": process.env["ETSY_API"],
-          authorization: "Bearer " + etsyToken,
+          authorization: `${process.env["TOKEN_TYPE"]} ${etsyToken}`,
         },
       }
-    )
-    .then((res) => {
-      orderInfo = res.data;
-    })
-    .catch((error) => {
-      if (error.response) {
-        console.log(error.response.data);
-        console.log(error.response.status);
-        console.log(error.response.headers);
-      } else if (error.request) {
-        console.log(error.request);
-      } else {
-        console.log("Error", error.message);
-      }
-      console.log(error.config);
-    });
+    );
+
+    orderInfo = res.data;
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 const getShopListings = async () => {
-  await axios
-    .get(
+  try {
+    const res = await axios.get(
       `https://openapi.etsy.com/v3/application/shops/${process.env.ANIMEFREAKQT_SHOP_ID}/listings/active`,
       {
         headers: {
           "x-api-key": process.env["ETSY_API"],
-          authorization: "Bearer " + etsyToken,
+          authorization: `${process.env["TOKEN_TYPE"]} ${etsyToken}`,
         },
       }
-    )
-    .then((res) => {
-      listingInfo = res.data;
-    })
-    .catch((error) => {
-      if (error.response) {
-        console.log(error.response.data);
-        console.log(error.response.status);
-        console.log(error.response.headers);
-      } else if (error.request) {
-        console.log(error.request);
-      } else {
-        console.log("Error", error.message);
-      }
-      console.log(error.config);
-    });
+    );
+    listingInfo = res.data;
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const getAll = () => {
+  getOrderInfo();
+  getShopReviews();
+  getShopListings();
 };
 
 client.once("ready", () => {
@@ -261,11 +239,7 @@ client.once("ready", () => {
   // getNewEtsyToken();
   etsyToken = process.env.ACCESS_TOKEN;
 
-  setTimeout(() => {
-    getOrderInfo();
-    getShopReviews();
-    getShopListings();
-  }, 10000);
+  setTimeout(getAll, 5_000);
 
   //update shop listings every 30 minutes
   setInterval(() => {
@@ -293,46 +267,37 @@ client.once("ready", () => {
 
   //Check for new orders on interval
   setInterval(() => {
-    if (!oldOrderInfo) {
-      oldOrderInfo = orderInfo;
-      // let itemDescription = [];
-      // let money = orderInfo.results[0].grandtotal.amount / 100;
-      // orderInfo.results[0].transactions.map((el) => {
-      //   itemDescription.push(
-      //     `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
-      //   );
-      // });
-      // itemDescription = itemDescription.join("");
-      // orderMsg.send(
-      //   `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
-      //     2
-      //   )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
-      //     orderInfo.results[0].formatted_address
-      //   }`
-      // );
-    }
-
-    if (orderInfo.count > oldOrderInfo.count) {
-      let newOrderCount = orderInfo.count - oldOrderInfo.count;
-
-      for (let i = newOrderCount - 1; i >= 0; i--) {
-        let money = orderInfo.results[i].grandtotal.amount / 100;
-        let itemDescription = [];
-        orderInfo.results[i].transactions.map((el) => {
-          itemDescription.push(
-            `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
-          );
-        });
-        itemDescription = itemDescription.join("");
-        orderMsg.send(
-          `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
-            2
-          )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
-            orderInfo.results[i].name
-          }\n`
-        );
+    try {
+      if (!oldOrderInfo) {
+        oldOrderInfo = orderInfo;
       }
-      oldOrderInfo = orderInfo;
+
+      if (orderInfo.count > oldOrderInfo.count) {
+        let newOrderCount = orderInfo.count - oldOrderInfo.count;
+
+        for (let i = newOrderCount - 1; i >= 0; i--) {
+          let money = orderInfo.results[i].grandtotal.amount / 100;
+          let itemDescription = [];
+          orderInfo.results[i].transactions.map((el) => {
+            const itemName =
+              el.variations.length === 0
+                ? el.title
+                : el.variations[0].formatted_value;
+            itemDescription.push(`• ${el.quantity} - ${itemName}\n`);
+          });
+          itemDescription = itemDescription.join("");
+          orderMsg.send(
+            `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
+              2
+            )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
+              orderInfo.results[i].name
+            }\n`
+          );
+        }
+        oldOrderInfo = orderInfo;
+      }
+    } catch (e) {
+      console.error(e);
     }
   }, 45 * 1000);
 
@@ -383,7 +348,7 @@ client.once("ready", () => {
           let buyerInfo = [];
           orderInfo.results.map((el) =>
             el.buyer_user_id == reviewInfo.results[i].buyer_user_id
-              ? buyerInfo.push(el.formatted_address)
+              ? buyerInfo.push(el.name)
               : null
           );
           let reviewFilter = listingInfo.results.filter(
@@ -400,7 +365,7 @@ client.once("ready", () => {
                 ? "*Review field left blank by customer*"
                 : reviewInfo.results[i].review
             }\n\n• **Customer:** \n${
-              buyerInfo.length == 0 ? "*No customer info*" : buyerInfo[i]
+              buyerInfo.length === 0 ? "*No customer info*" : buyerInfo[i]
             }`
           );
         }
