@@ -22,6 +22,10 @@ let oldOrderInfo;
 let listingInfo;
 let timer = 0;
 
+process.on("uncaughtException", (e) => {
+  console.error(e);
+});
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -126,6 +130,7 @@ const refreshEtsyToken = async () => {
 
     refreshToken = data.refresh_token;
     etsyToken = data.access_token;
+    console.info("Got new access token");
   } catch (e) {
     console.log(e);
   }
@@ -169,8 +174,8 @@ const oauth2Token = async () => {
 };
 
 const getShopReviews = async () => {
-  await axios
-    .get(
+  try {
+    const res = await axios.get(
       `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}/reviews?limit=100`,
       {
         headers: {
@@ -178,240 +183,203 @@ const getShopReviews = async () => {
           authorization: `${process.env["TOKEN_TYPE"]} ${etsyToken}`,
         },
       }
-    )
-    .then((res) => {
-      reviewInfo = res.data;
-    })
-    .catch((error) => {
-      if (error.response) {
-        console.log(error.response.data);
-        console.log(error.response.status);
-        console.log(error.response.headers);
-      } else if (error.request) {
-        console.log(error.request);
-      } else {
-        console.log("Error", error.message);
-      }
-      console.log(error.config);
-    });
+    );
+    reviewInfo = res.data;
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 const getOrderInfo = async () => {
-  await axios
-    .get(
+  try {
+    const res = await axios.get(
       `https://openapi.etsy.com/v3/application/shops/${process.env["ANIMEFREAKQT_SHOP_ID"]}/receipts`,
       {
         headers: {
           "x-api-key": process.env["ETSY_API"],
-          authorization: "Bearer " + etsyToken,
+          authorization: `${process.env["TOKEN_TYPE"]} ${etsyToken}`,
         },
       }
-    )
-    .then((res) => {
-      orderInfo = res.data;
-    })
-    .catch((error) => {
-      if (error.response) {
-        console.log(error.response.data);
-        console.log(error.response.status);
-        console.log(error.response.headers);
-      } else if (error.request) {
-        console.log(error.request);
-      } else {
-        console.log("Error", error.message);
-      }
-      console.log(error.config);
-    });
+    );
+
+    orderInfo = res.data;
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 const getShopListings = async () => {
-  await axios
-    .get(
+  try {
+    const res = await axios.get(
       `https://openapi.etsy.com/v3/application/shops/${process.env.ANIMEFREAKQT_SHOP_ID}/listings/active`,
       {
         headers: {
           "x-api-key": process.env["ETSY_API"],
-          authorization: "Bearer " + etsyToken,
+          authorization: `${process.env["TOKEN_TYPE"]} ${etsyToken}`,
         },
       }
-    )
-    .then((res) => {
-      listingInfo = res.data;
-    })
-    .catch((error) => {
-      if (error.response) {
-        console.log(error.response.data);
-        console.log(error.response.status);
-        console.log(error.response.headers);
-      } else if (error.request) {
-        console.log(error.request);
-      } else {
-        console.log("Error", error.message);
-      }
-      console.log(error.config);
-    });
+    );
+    listingInfo = res.data;
+  } catch (e) {
+    console.error(e);
+  }
 };
 
-client.once("ready", () => {
-  console.log(`Bot ${client.user.tag} ready!`);
-  const orderMsg = client.channels.cache.get(
-    process.env["ANIMEQT_ORDER_HISTORY"]
-  );
-  const reviewMsg = client.channels.cache.get(
-    process.env["ANIMEQT_ETSY_REVIEWS"]
-  );
+const getAll = () => {
+  getOrderInfo();
+  getShopReviews();
+  getShopListings();
+};
 
-  // getNewEtsyToken();
-  etsyToken = process.env.ACCESS_TOKEN;
+client.once("ready", async () => {
+  try {
+    await refreshEtsyToken();
+    console.log(`Bot ${client.user.tag} ready!`);
+    const orderMsg = client.channels.cache.get(
+      process.env["ANIMEQT_ORDER_HISTORY"]
+    );
+    const reviewMsg = client.channels.cache.get(
+      process.env["ANIMEQT_ETSY_REVIEWS"]
+    );
 
-  setTimeout(() => {
-    getOrderInfo();
-    getShopReviews();
-    getShopListings();
-  }, 10000);
+    // getNewEtsyToken();
+    etsyToken = process.env.ACCESS_TOKEN;
 
-  //update shop listings every 30 minutes
-  setInterval(() => {
-    getShopListings();
-  }, 1000 * 60 * 30);
+    setTimeout(getAll, 5_000);
 
-  //get new token on interval
-  setInterval(() => {
-    refreshEtsyToken();
-    console.log(`Got new token`);
-  }, 45 * 60 * 1000);
+    //update shop listings every 30 minutes
+    setInterval(() => {
+      getShopListings();
+    }, 1000 * 60 * 30);
 
-  //get new info on interval
-  setInterval(() => {
-    try {
-      getOrderInfo();
-      getShopReviews();
-    } catch {
-      refreshEtsyToken();
-    }
-    timer++;
-    console.clear();
-    console.log(`Checked for updated data ${timer} time(s)`);
-  }, 45 * 1000);
+    //get new token on interval
+    setInterval(refreshEtsyToken, 30 * 60 * 1000);
 
-  //Check for new orders on interval
-  setInterval(() => {
-    if (!oldOrderInfo) {
-      oldOrderInfo = orderInfo;
-      // let itemDescription = [];
-      // let money = orderInfo.results[0].grandtotal.amount / 100;
-      // orderInfo.results[0].transactions.map((el) => {
-      //   itemDescription.push(
-      //     `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
-      //   );
-      // });
-      // itemDescription = itemDescription.join("");
-      // orderMsg.send(
-      //   `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
-      //     2
-      //   )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
-      //     orderInfo.results[0].formatted_address
+    //get new info on interval
+    setInterval(() => {
+      try {
+        getOrderInfo();
+        getShopReviews();
+      } catch {
+        refreshEtsyToken();
+      }
+      timer++;
+      console.clear();
+      console.log(`Checked for updated data ${timer} time(s)`);
+    }, 45 * 1000);
+
+    //Check for new orders on interval
+    setInterval(() => {
+      try {
+        if (!oldOrderInfo) {
+          oldOrderInfo = orderInfo;
+        }
+
+        if (orderInfo.count > oldOrderInfo.count) {
+          let newOrderCount = orderInfo.count - oldOrderInfo.count;
+
+          for (let i = newOrderCount - 1; i >= 0; i--) {
+            let money = orderInfo.results[i].grandtotal.amount / 100;
+            let itemDescription = [];
+            orderInfo.results[i].transactions.map((el) => {
+              const itemName =
+                el.variations.length === 0
+                  ? el.title
+                  : el.variations[0].formatted_value;
+              itemDescription.push(`• ${el.quantity} - ${itemName}\n`);
+            });
+            itemDescription = itemDescription.join("");
+            orderMsg.send(
+              `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
+                2
+              )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
+                orderInfo.results[i].name
+              }\n`
+            );
+          }
+          oldOrderInfo = orderInfo;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }, 45 * 1000);
+
+    //Check for new reviews
+    setInterval(() => {
+      // let averageRating;
+      // let reviewTotal = 0;
+      // reviewInfo.results.map((el) => (reviewTotal += el.rating));
+      // averageRating = reviewTotal / reviewInfo.results.length;
+      // let reviewFilter = listingInfo.results.filter(
+      //   (el) => el.listing_id == reviewInfo.results[0].listing_id
+      // );
+      // let buyerInfo = [];
+      // orderInfo.results.map((el) =>
+      //   el.buyer_user_id == reviewInfo.results[0].buyer_user_id
+      //     ? buyerInfo.push(el.formatted_address)
+      //     : null
+      // );
+      // console.log(buyerInfo);
+      // reviewMsg.send(
+      //   `@everyone **NEW REVIEW!!** - ${getFormatDate()} - **Total Reviews:** ${
+      //     reviewInfo.results.length
+      //   } - **Average Review:** ${averageRating.toFixed(1)}
+      //   \n• **Item:** ${reviewFilter[0].title}\n\n• **Rating:** ${
+      //     reviewInfo.results[0].rating
+      //   } stars\n\n• **Review:** ${
+      //     reviewInfo.results[0].review == ""
+      //       ? "*Review field left blank by customer*"
+      //       : reviewInfo.results[0].review
+      //   }\n\n• **Customer:** \n${
+      //     buyerInfo.length == 0 ? "*No customer info*" : buyerInfo[0]
       //   }`
       // );
-    }
-
-    if (orderInfo.count > oldOrderInfo.count) {
-      let newOrderCount = orderInfo.count - oldOrderInfo.count;
-
-      for (let i = newOrderCount - 1; i >= 0; i--) {
-        let money = orderInfo.results[i].grandtotal.amount / 100;
-        let itemDescription = [];
-        orderInfo.results[i].transactions.map((el) => {
-          itemDescription.push(
-            `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
-          );
-        });
-        itemDescription = itemDescription.join("");
-        orderMsg.send(
-          `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
-            2
-          )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
-            orderInfo.results[i].name
-          }\n`
-        );
-      }
-      oldOrderInfo = orderInfo;
-    }
-  }, 45 * 1000);
-
-  //Check for new reviews
-  setInterval(() => {
-    // let averageRating;
-    // let reviewTotal = 0;
-    // reviewInfo.results.map((el) => (reviewTotal += el.rating));
-    // averageRating = reviewTotal / reviewInfo.results.length;
-    // let reviewFilter = listingInfo.results.filter(
-    //   (el) => el.listing_id == reviewInfo.results[0].listing_id
-    // );
-    // let buyerInfo = [];
-    // orderInfo.results.map((el) =>
-    //   el.buyer_user_id == reviewInfo.results[0].buyer_user_id
-    //     ? buyerInfo.push(el.formatted_address)
-    //     : null
-    // );
-    // console.log(buyerInfo);
-    // reviewMsg.send(
-    //   `@everyone **NEW REVIEW!!** - ${getFormatDate()} - **Total Reviews:** ${
-    //     reviewInfo.results.length
-    //   } - **Average Review:** ${averageRating.toFixed(1)}
-    //   \n• **Item:** ${reviewFilter[0].title}\n\n• **Rating:** ${
-    //     reviewInfo.results[0].rating
-    //   } stars\n\n• **Review:** ${
-    //     reviewInfo.results[0].review == ""
-    //       ? "*Review field left blank by customer*"
-    //       : reviewInfo.results[0].review
-    //   }\n\n• **Customer:** \n${
-    //     buyerInfo.length == 0 ? "*No customer info*" : buyerInfo[0]
-    //   }`
-    // );
-    if (!oldReviewInfo) {
-      oldReviewInfo = reviewInfo;
-    }
-    if (!reviewInfo) {
-      return;
-    } else if (reviewInfo.count > oldReviewInfo.count) {
-      if (reviewInfo.count > oldReviewInfo.count) {
-        let newReviewCount = reviewInfo.count - oldReviewInfo.count;
-        let averageRating;
-        let reviewTotal = 0;
-        reviewInfo.results.map((el) => (reviewTotal += el.rating));
-        averageRating = reviewTotal / reviewInfo.results.length;
-
-        for (let i = newReviewCount - 1; i >= 0; i--) {
-          let buyerInfo = [];
-          orderInfo.results.map((el) =>
-            el.buyer_user_id == reviewInfo.results[i].buyer_user_id
-              ? buyerInfo.push(el.formatted_address)
-              : null
-          );
-          let reviewFilter = listingInfo.results.filter(
-            (el) => el.listing_id == reviewInfo.results[i].listing_id
-          );
-          reviewMsg.send(
-            `@everyone **NEW REVIEW!!** - ${getFormatDate()} - **Total Reviews:** ${
-              reviewInfo.results.length
-            } - **Average Review:** ${averageRating.toFixed(1)}
-            \n• **Item:** ${reviewFilter[0].title}\n\n• **Rating:** ${
-              reviewInfo.results[i].rating
-            } stars\n\n• **Review:** ${
-              reviewInfo.results[i].review == ""
-                ? "*Review field left blank by customer*"
-                : reviewInfo.results[i].review
-            }\n\n• **Customer:** \n${
-              buyerInfo.length == 0 ? "*No customer info*" : buyerInfo[i]
-            }`
-          );
-        }
+      if (!oldReviewInfo) {
         oldReviewInfo = reviewInfo;
-        reviewTotal = 0;
       }
-    }
-  }, 45 * 1000);
+      if (!reviewInfo) {
+        return;
+      } else if (reviewInfo.count > oldReviewInfo.count) {
+        if (reviewInfo.count > oldReviewInfo.count) {
+          let newReviewCount = reviewInfo.count - oldReviewInfo.count;
+          let averageRating;
+          let reviewTotal = 0;
+          reviewInfo.results.map((el) => (reviewTotal += el.rating));
+          averageRating = reviewTotal / reviewInfo.results.length;
+
+          for (let i = newReviewCount - 1; i >= 0; i--) {
+            let buyerInfo = [];
+            orderInfo.results.map((el) =>
+              el.buyer_user_id == reviewInfo.results[i].buyer_user_id
+                ? buyerInfo.push(el.name)
+                : null
+            );
+            let reviewFilter = listingInfo.results.filter(
+              (el) => el.listing_id == reviewInfo.results[i].listing_id
+            );
+            reviewMsg.send(
+              `@everyone **NEW REVIEW!!** - ${getFormatDate()} - **Total Reviews:** ${
+                reviewInfo.results.length
+              } - **Average Review:** ${averageRating.toFixed(1)}
+              \n• **Item:** ${reviewFilter[0].title}\n\n• **Rating:** ${
+                reviewInfo.results[i].rating
+              } stars\n\n• **Review:** ${
+                reviewInfo.results[i].review == ""
+                  ? "*Review field left blank by customer*"
+                  : reviewInfo.results[i].review
+              }\n\n• **Customer:** \n${
+                buyerInfo.length === 0 ? "*No customer info*" : buyerInfo[i]
+              }`
+            );
+          }
+          oldReviewInfo = reviewInfo;
+          reviewTotal = 0;
+        }
+      }
+    }, 45 * 1000);
+  } catch (e) {
+    console.error(e);
+  }
 });
 
 client.on("messageCreate", (message) => {
