@@ -14,7 +14,10 @@ let etsyToken = process.env.ACCESS_TOKEN;
 let refreshToken = process.env.REFRESH_TOKEN;
 let reviewInfo;
 let oldReviewInfo;
-let orderInfo;
+let orderInfo = {
+  count: 0,
+  results: [0],
+};
 let oldOrderInfo;
 let listingInfo;
 let timer = 0;
@@ -421,6 +424,28 @@ client.on("messageCreate", (message) => {
       message.reply(mockSpeak(message.content, message));
     } else if (message.guild == process.env.TAINTED_SOULS_GENERAL) {
       message.reply(`Hmmmm, ${message.content}, very interesting`);
+    }
+
+    if (
+      message.channelId == process.env.ANIMEQT_ORDER_HISTORY &&
+      message.content === "/last_order"
+    ) {
+      const lastOrder = orderInfo.results[0];
+      let money = lastOrder.grandtotal.amount / 100;
+      let itemDescription = [];
+      lastOrder.transactions.map((el) => {
+        itemDescription.push(
+          `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
+        );
+      });
+      itemDescription = itemDescription.join("");
+      message.reply(
+        `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
+          2
+        )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
+          lastOrder.name
+        }\n`
+      );
     }
   }
 });
