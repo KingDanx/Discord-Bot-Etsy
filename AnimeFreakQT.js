@@ -402,9 +402,11 @@ client.on("messageCreate", (message) => {
       let money = lastOrder.grandtotal.amount / 100;
       let itemDescription = [];
       lastOrder.transactions.map((el) => {
-        itemDescription.push(
-          `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
-        );
+        el.variations.length === 0
+          ? itemDescription.push(`• ${el.quantity} - ${el.title}\n`)
+          : itemDescription.push(
+              `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
+            );
       });
       itemDescription = itemDescription.join("");
       message.reply(
