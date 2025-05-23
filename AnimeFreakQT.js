@@ -279,7 +279,10 @@ client.once("ready", async () => {
           let newOrderCount = orderInfo.count - oldOrderInfo.count;
 
           for (let i = newOrderCount - 1; i >= 0; i--) {
-            let money = orderInfo.results[i].grandtotal.amount / 100;
+            let money = 0;
+            if (orderInfo.results[i]?.grandtotal) {
+              money = orderInfo.results[i].grandtotal.amount / 100;
+            }
             let itemDescription = [];
             orderInfo.results[i].transactions.map((el) => {
               const itemName =
@@ -289,10 +292,15 @@ client.once("ready", async () => {
               itemDescription.push(`• ${el.quantity} - ${itemName}\n`);
             });
             itemDescription = itemDescription.join("");
+
+            if (money === 0) {
+              money = "Etsy error, grand total was not provided.";
+            } else {
+              money = money.toFixed(2);
+            }
+
             orderMsg.send(
-              `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
-                2
-              )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
+              `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
                 orderInfo.results[i].name
               }\n`
             );
