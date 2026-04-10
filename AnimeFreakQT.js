@@ -22,6 +22,27 @@ let oldOrderInfo;
 let listingInfo;
 let timer = 0;
 
+const characterMap = new Map();
+
+characterMap.set("1", "Luffy");
+characterMap.set("2", "Chopper");
+characterMap.set("3", "Jinbe");
+characterMap.set("4", "Sanji");
+characterMap.set("5", "Zoro");
+characterMap.set("6", "Nami");
+characterMap.set("7", "Yamoto");
+characterMap.set("8", "Nico Robin");
+characterMap.set("9", "Brook");
+characterMap.set("10", "Ussop");
+characterMap.set("11", "Franky");
+characterMap.set("12", "Ace");
+characterMap.set("13", "Shanks");
+characterMap.set("14", "Garp");
+characterMap.set("15", "White Beard");
+characterMap.set("16", "Law Head");
+characterMap.set("17", "Doflamingo");
+characterMap.set("18", "Marco the Phoenix");
+
 process.on("uncaughtException", (e) => {
   console.error(e);
 });
@@ -125,7 +146,7 @@ const refreshEtsyToken = async () => {
           "Content-Type": "application/x-www-form-urlencoded", // Specify content type
           "x-api-key": process.env["ETSY_API"],
         },
-      }
+      },
     );
 
     refreshToken = data.refresh_token;
@@ -154,7 +175,7 @@ const oauth2Token = async () => {
           "Content-Type": "application/x-www-form-urlencoded", // Specify content type
           "x-api-key": process.env["ETSY_API"],
         },
-      }
+      },
     );
 
     refreshToken = data.refresh_token;
@@ -182,7 +203,7 @@ const getShopReviews = async () => {
           "x-api-key": process.env["ETSY_API"],
           authorization: `${process.env["TOKEN_TYPE"]} ${etsyToken}`,
         },
-      }
+      },
     );
     reviewInfo = res.data;
   } catch (e) {
@@ -199,7 +220,7 @@ const getOrderInfo = async () => {
           "x-api-key": process.env["ETSY_API"],
           authorization: `${process.env["TOKEN_TYPE"]} ${etsyToken}`,
         },
-      }
+      },
     );
 
     orderInfo = res.data;
@@ -217,7 +238,7 @@ const getShopListings = async () => {
           "x-api-key": process.env["ETSY_API"],
           authorization: `${process.env["TOKEN_TYPE"]} ${etsyToken}`,
         },
-      }
+      },
     );
     listingInfo = res.data;
   } catch (e) {
@@ -236,10 +257,10 @@ client.once("ready", async () => {
     await refreshEtsyToken();
     console.log(`Bot ${client.user.tag} ready!`);
     const orderMsg = client.channels.cache.get(
-      process.env["ANIMEQT_ORDER_HISTORY"]
+      process.env["ANIMEQT_ORDER_HISTORY"],
     );
     const reviewMsg = client.channels.cache.get(
-      process.env["ANIMEQT_ETSY_REVIEWS"]
+      process.env["ANIMEQT_ETSY_REVIEWS"],
     );
 
     // getNewEtsyToken();
@@ -248,9 +269,12 @@ client.once("ready", async () => {
     setTimeout(getAll, 5_000);
 
     //update shop listings every 30 minutes
-    setInterval(() => {
-      getShopListings();
-    }, 1000 * 60 * 30);
+    setInterval(
+      () => {
+        getShopListings();
+      },
+      1000 * 60 * 30,
+    );
 
     //get new token on interval
     setInterval(refreshEtsyToken, 30 * 60 * 1000);
@@ -302,7 +326,7 @@ client.once("ready", async () => {
             orderMsg.send(
               `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
                 orderInfo.results[i].name
-              }\n`
+              }\n`,
             );
           }
           oldOrderInfo = orderInfo;
@@ -360,10 +384,10 @@ client.once("ready", async () => {
             orderInfo.results.map((el) =>
               el.buyer_user_id == reviewInfo.results[i].buyer_user_id
                 ? buyerInfo.push(el.name)
-                : null
+                : null,
             );
             let reviewFilter = listingInfo.results.filter(
-              (el) => el.listing_id == reviewInfo.results[i].listing_id
+              (el) => el.listing_id == reviewInfo.results[i].listing_id,
             );
             reviewMsg.send(
               `@everyone **NEW REVIEW!!** - ${getFormatDate()} - **Total Reviews:** ${
@@ -377,7 +401,7 @@ client.once("ready", async () => {
                   : reviewInfo.results[i].review
               }\n\n• **Customer:** \n${
                 buyerInfo.length === 0 ? "*No customer info*" : buyerInfo[i]
-              }`
+              }`,
             );
           }
           oldReviewInfo = reviewInfo;
@@ -413,16 +437,16 @@ client.on("messageCreate", (message) => {
         el.variations.length === 0
           ? itemDescription.push(`• ${el.quantity} - ${el.title}\n`)
           : itemDescription.push(
-              `• ${el.quantity} - ${el.variations[0].formatted_value}\n`
+              `• ${el.quantity} - ${characterMap.get(el.variations[0].formatted_value) || el.variations[0].formatted_value}\n`,
             );
       });
       itemDescription = itemDescription.join("");
       message.reply(
         `@everyone **NEW SALE!!** - ${getFormatDate()} - **$${money.toFixed(
-          2
+          2,
         )}**\n\n**Items:**\n${itemDescription}\n**Customer:**\n${
           lastOrder.name
-        }\n`
+        }\n`,
       );
     }
   }
